@@ -3,6 +3,18 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
+const BARK_KEY = "H4pXqrLHwu7ew2CWYjx6Qh";
+
+async function sendBarkNotification(title, body) {
+    const url = `https://api.day.app/${BARK_KEY}/${encodeURIComponent(title)}/${encodeURIComponent(body)}?group=Vehicle2U&sound=bell`;
+    try {
+        await fetch(url);
+    } catch (error) {
+        // Fallback if fetch is not defined in older Node versions
+        console.error("Bark failed");
+    }
+}
+
 const app = express();
 app.use(cors());
 
@@ -174,6 +186,7 @@ io.on('connection', (socket) => {
         };
 
         visitor.messages.push(message);
+        sendBarkNotification(`Mensaje de ${socket.visitorId.slice(-4)}`, text);
         visitor.unreadCount = (visitor.unreadCount || 0) + 1;
         visitor.isTyping = false;
 
@@ -208,6 +221,7 @@ io.on('connection', (socket) => {
         };
 
         visitor.messages.push(message);
+        sendBarkNotification(`Imagen de ${socket.visitorId.slice(-4)}`, "📷 Ha enviado una foto");
         visitor.unreadCount = (visitor.unreadCount || 0) + 1;
         visitor.isTyping = false;
 
