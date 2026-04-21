@@ -3,15 +3,15 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
-const BARK_KEY = "H4pXqrLHwu7ew2CWYjx6Qh";
-
-async function sendBarkNotification(title, body) {
-    const url = `https://api.day.app/${BARK_KEY}/${encodeURIComponent(title)}/${encodeURIComponent(body)}?group=Vehicle2U&sound=bell`;
+async function sendNtfy(message, tags = "speech_balloon") {
     try {
-        await fetch(url);
-    } catch (error) {
-        // Fallback if fetch is not defined in older Node versions
-        console.error("Bark failed");
+        await fetch("https://ntfy.sh/deskchat-adminpanel-asokwonye-2023", {
+            method: 'POST',
+            body: message,
+            headers: { 'Title': 'Vehicle2U Chat', 'Tags': tags }
+        });
+    } catch (e) {
+        console.error("ntfy failed");
     }
 }
 
@@ -186,7 +186,7 @@ io.on('connection', (socket) => {
         };
 
         visitor.messages.push(message);
-        sendBarkNotification(`Mensaje de ${socket.visitorId.slice(-4)}`, text);
+        sendNtfy(`Nuevo mensaje de ${socket.visitorId.slice(-4)}: ${text}`);
         visitor.unreadCount = (visitor.unreadCount || 0) + 1;
         visitor.isTyping = false;
 
@@ -221,7 +221,7 @@ io.on('connection', (socket) => {
         };
 
         visitor.messages.push(message);
-        sendBarkNotification(`Imagen de ${socket.visitorId.slice(-4)}`, "📷 Ha enviado una foto");
+        sendNtfy(`El visitante ${socket.visitorId.slice(-4)} envió una imagen`, "camera");
         visitor.unreadCount = (visitor.unreadCount || 0) + 1;
         visitor.isTyping = false;
 
@@ -456,6 +456,13 @@ io.on('connection', (socket) => {
     // ─── PING/PONG KEEPALIVE ───
     socket.on('ping_server', () => {
         socket.emit('pong_server');
+    });
+
+    // ─── VISITOR LEFT ───
+    socket.on('visitor_left', () => {
+        if (socket.visitorId) {
+            sendNtfy(`Sesión finalizada por el visitante ${socket.visitorId.slice(-4)}`, "door");
+        }
     });
 
     // ─── DISCONNECT ───
